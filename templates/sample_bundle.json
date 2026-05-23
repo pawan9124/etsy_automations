@@ -1,0 +1,18 @@
+{
+    "bundle_name": "Moon Ritual",
+    "subtitle": "15 Tumbler Wrap Bundle",
+    "tumbler_type": "20oz Skinny Tumbler",
+    "wrap_count": 15,
+    "category": "Gothic / Celestial",
+    "aesthetic_tags": ["Dark", "Celestial", "Mystic", "Timeless"],
+    "palette": [
+        { "name": "Deep Navy",       "hex": "#0a0e2a" },
+        { "name": "Midnight Purple", "hex": "#2d1b4e" },
+        { "name": "Antique Gold",    "hex": "#c9a84c" },
+        { "name": "Silver Moon",     "hex": "#b8b8c0" },
+        { "name": "Crimson Rose",    "hex": "#8b3a4a" },
+        { "name": "Charcoal Black",  "hex": "#1a1a1a" }
+    ],
+    "shop_name": "xfantasypro",
+    "shop_tagline": "Premium Digital Designs"
+}

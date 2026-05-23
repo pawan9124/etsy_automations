@@ -1,0 +1,21 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Input and Output data
+input/
+output/
+logs/
+
+# Test artifacts
+test_*.png
+test_*.jpg
+debug_crop.png
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Google credentials — never commit these
+credentials/
