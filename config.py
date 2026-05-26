@@ -55,7 +55,7 @@ LOG_LEVEL = "INFO"
 
 # ─── Google Drive Upload ─────────────────────────────────────
 # Set to False to skip Drive upload entirely
-DRIVE_UPLOAD_ENABLED = False
+DRIVE_UPLOAD_ENABLED = True
 
 # Path to your OAuth2 credentials JSON downloaded from Google Cloud Console.
 # Steps to get it: https://developers.google.com/drive/api/quickstart/python

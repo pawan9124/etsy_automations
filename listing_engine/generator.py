@@ -19,6 +19,7 @@ from config import OUTPUT_DIR, SUPPORTED_EXTENSIONS, STRAIGHT_SUFFIX, TAPERED_SU
 from listing_engine.ai_listing import generate_listing_copy
 from listing_engine.slides import (
     slide_01_hero,
+    slide_01_b_hero_single_wrap,
     slide_02_bundle_grid,
     slide_03_closeup,
     slide_04_flat_wrap,
@@ -270,6 +271,21 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
         )
         saved.append(_save_slide(img, out_dir, "01_hero.png"))
 
+        # --- SLIDE 01_B: Single Wrap Hero ---
+        img_b = slide_01_b_hero_single_wrap(
+            wrap_path=hero_wraps[0],
+            base_path=hero_base,
+            mask_paths=hero_masks,
+            disp_paths=hero_disps,
+            glass_path=hero_glass,
+            bundle_name=bundle_name,
+            subtitle=subtitle,
+            tags=tags,
+            count=wrap_count,
+            tumbler_type=meta.get("tumbler_type", "20oz Skinny Tumbler"),
+        )
+        saved.append(_save_slide(img_b, out_dir, "01_1_hero_single_wrap.png"))
+
     # --- SLIDE 02: Bundle Grid ---
     img = slide_02_bundle_grid(wraps, bg_15, prod_single_base, prod_single_mask, prod_single_disp, prod_single_glass)
     saved.append(_save_slide(img, out_dir, "02_bundle_grid.png"))
@@ -352,5 +368,17 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
 
     # --- AI: Etsy listing copy (title / description / tags) ---
     generate_listing_copy(bundle_dir, meta)
+
+    # --- Marketing Video Generation ---
+    try:
+        from listing_engine.marketing_video import generate_marketing_video
+        out_video = out_dir / "12_marketing_presentation.mp4"
+        logger.info("Starting Marketing Video Generation...")
+        # Use the first wrap for the 3D rotating part
+        generate_marketing_video(bundle_dir, str(wraps[0]), str(out_video))
+        saved.append(out_video)
+        logger.info("Marketing Video generated successfully!")
+    except Exception as e:
+        logger.error("Failed to generate marketing video: %s", e)
 
     return saved

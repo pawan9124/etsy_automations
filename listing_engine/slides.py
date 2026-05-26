@@ -140,6 +140,84 @@ def slide_01_hero(
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SLIDE 01_B — HERO SINGLE WRAP
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def slide_01_b_hero_single_wrap(
+    wrap_path: Path,
+    base_path: Path,
+    mask_paths: list[Path],
+    disp_paths: list[Path],
+    glass_path: Path,
+    bundle_name: str,
+    subtitle: str,
+    tags: list[str],
+    count: int = 15,
+    tumbler_type: str = "20oz Skinny Tumbler",
+) -> Image.Image:
+    """Hero slide: triple tumbler mockup showing left, center, right of ONE design."""
+    
+    # We pass the same wrap 3 times but tell the mockup generator to crop different parts
+    selected_wraps = [wrap_path, wrap_path, wrap_path]
+    positions = ["left", "strict_center", "right"]
+
+    mockup = generate_triple_mockup(
+        artwork_paths=selected_wraps,
+        base_path=base_path,
+        mask_paths=mask_paths,
+        displacement_paths=disp_paths,
+        glass_path=glass_path,
+        positions=positions,
+    )
+
+    # --- Dark gradient at top for text legibility ---
+    w, h = mockup.size
+    grad_end = int(h * 0.20)
+    overlay = Image.new("RGBA", mockup.size, (0, 0, 0, 0))
+    draw_ov = ImageDraw.Draw(overlay)
+    for y in range(grad_end):
+        alpha = int(200 * (1.0 - y / grad_end))
+        draw_ov.line([(0, y), (w, y)], fill=(0, 0, 0, alpha))
+    mockup = Image.alpha_composite(mockup.convert("RGBA"), overlay)
+
+    # --- Text layers ---
+    draw = ImageDraw.Draw(mockup)
+    title_font = load_title_font(64)
+    sub_font = load_subtitle_font(26)
+    body_font = load_body_font(20)
+    cx = w // 2
+
+    # Collection name — large gold, horizontally centered on the actual canvas
+    _draw_text_centered(draw, bundle_name.upper(), int(h * 0.018), title_font, fill=ACCENT_COLOR, canvas_w=w)
+
+    # Thin gold rule below title
+    rule_y = int(h * 0.094)
+    draw.line([(cx - 240, rule_y), (cx + 240, rule_y)], fill=ACCENT_COLOR + (110,), width=1)
+
+    # Selling points
+    _draw_text_centered(
+        draw,
+        "STRAIGHT  +  TAPERED  WRAP FORMATS",
+        int(h * 0.106),
+        sub_font,
+        fill=TEXT_COLOR,
+        canvas_w=w,
+    )
+    _draw_text_centered(
+        draw,
+        "HIGH-RESOLUTION  300 DPI   ·   PRINT-READY   ·   COMMERCIAL USE",
+        int(h * 0.144),
+        body_font,
+        fill=SUBTLE_COLOR,
+        canvas_w=w,
+    )
+
+    logger.info("  [SLIDE 01_B] Single Wrap Hero image — %s", bundle_name)
+    return mockup
+
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # SLIDE 02 — BUNDLE GRID
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

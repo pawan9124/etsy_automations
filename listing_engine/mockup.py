@@ -73,11 +73,14 @@ def _create_single_tumbler_view(
     PIL.Image — composited RGBA layer, or None on failure
     """
     # --- 1) Crop the design for panoramic views ---
-    if crop_mode in ("left", "center", "right"):
+    if crop_mode in ("left", "center", "strict_center", "right"):
         dw, dh = design_wrap.size
         half = dw // 2
         if crop_mode == "left":
             crop_box = (0, 0, half, dh)
+        elif crop_mode == "strict_center":
+            x1 = (dw - half) // 2
+            crop_box = (x1, 0, x1 + half, dh)
         elif crop_mode == "center":
             # Center the crop on the visually striking part of the artwork,
             # not just the geometric middle. This keeps the subject's face/
@@ -273,13 +276,15 @@ def generate_triple_mockup(
     glass_path: Path = None,
     strength: float = DEFAULT_DISPLACEMENT_STRENGTH,
     glass_opacity: float = DEFAULT_GLASS_OPACITY,
+    positions: list[str] = None,
 ) -> Image.Image:
     """
     Generate a triple-tumbler mockup by compositing 3 artworks
     onto left/center/right positions.
     """
     base = Image.open(base_path).convert("RGBA")
-    positions = ["center", "center", "center"]
+    if positions is None:
+        positions = ["center", "center", "center"]
     
     glass = None
     if glass_path and glass_path.exists():
