@@ -375,7 +375,7 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
         out_video = out_dir / "12_marketing_presentation.mp4"
         logger.info("Starting Marketing Video Generation...")
         # Use the first wrap for the 3D rotating part
-        generate_marketing_video(bundle_dir, str(wraps[0]), str(out_video))
+        generate_marketing_video(out_dir.parent, str(wraps[0]), str(out_video))
         saved.append(out_video)
         logger.info("Marketing Video generated successfully!")
     except Exception as e:
