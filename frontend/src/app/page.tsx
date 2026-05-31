@@ -60,6 +60,14 @@ export default function MockupPipeline() {
     return () => clearInterval(interval);
   }, [uploadState]);
 
+  // Wake up Render backend on page load
+  useEffect(() => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    fetch(`${API_BASE}/api/health`).catch(() => {
+      // Silently fail if it takes a while to wake up
+    });
+  }, []);
+
   const generateMockups = async () => {
     if (files.length === 0) return;
     setUploadState("processing");

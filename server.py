@@ -17,6 +17,10 @@ from listing_engine.slides import slide_01_hero, slide_01_b_hero_single_wrap, sl
 
 app = FastAPI(title="Etsy Mockup Teaser API")
 
+@app.get("/api/health")
+def health_check():
+    return {"status": "awake"}
+
 # Allow CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
