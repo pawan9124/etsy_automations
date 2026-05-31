@@ -164,12 +164,27 @@ async def capture_lead(lead: LeadData):
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-        c.execute(
-            "INSERT INTO leads (name, email, etsy_url, timestamp) VALUES (?, ?, ?, ?)",
-            (lead.name, lead.email, lead.etsyUrl, datetime.utcnow())
-        )
+        c.execute("INSERT INTO leads (name, email, etsy_url) VALUES (?, ?, ?)", 
+                  (lead.name, lead.email, lead.etsyUrl))
         conn.commit()
         conn.close()
+        
+        # --- Send Lead to Discord (if webhook is set) ---
+        import os
+        import urllib.request
+        import json
+        webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+        if webhook_url:
+            payload = {
+                "content": f"🎉 **New Etsy Lead!**\n**Name:** {lead.name}\n**Email:** {lead.email}\n**Shop:** <{lead.etsyUrl}>"
+            }
+            req = urllib.request.Request(webhook_url, method="POST")
+            req.add_header('Content-Type', 'application/json')
+            try:
+                urllib.request.urlopen(req, json.dumps(payload).encode('utf-8'))
+            except Exception as e:
+                print(f"Discord webhook failed: {e}")
+        
         return {"status": "success", "message": "Lead captured successfully"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
