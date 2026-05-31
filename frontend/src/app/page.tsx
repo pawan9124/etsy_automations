@@ -71,8 +71,8 @@ export default function MockupPipeline() {
         formData.append("files", file);
       });
 
-      // Try calling the FastAPI backend
-      const response = await fetch("http://localhost:8000/api/generate-teaser", {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE}/api/generate-teaser`, {
         method: "POST",
         body: formData,
       });
@@ -108,7 +108,8 @@ export default function MockupPipeline() {
 
     try {
       // 1. Save lead to backend
-      const response = await fetch("http://localhost:8000/api/capture-lead", {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE}/api/capture-lead`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(leadForm),
