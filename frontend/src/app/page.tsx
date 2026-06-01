@@ -562,6 +562,11 @@ export default function MockupPipeline() {
 
       </main>
 
+      {/* Footer */}
+      <footer className="w-full py-8 text-center text-zinc-500 text-sm">
+        <p>Questions? Contact us at <a href="mailto:xfantasypro@gmail.com" className="text-zinc-400 hover:text-white transition-colors underline decoration-zinc-700 underline-offset-4">xfantasypro@gmail.com</a></p>
+      </footer>
+
       {/* Lightbox Modal */}
       <AnimatePresence>
         {selectedImage && (
