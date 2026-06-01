@@ -203,7 +203,10 @@ export default function MockupPipeline() {
               <p className="text-zinc-300 font-medium mb-1">
                 Drag & drop up to 4 wraps here
               </p>
-              <p className="text-sm text-zinc-500">Supports .PNG or .JPG</p>
+              <p className="text-sm text-zinc-500 mb-3">Supports .PNG or .JPG</p>
+              <p className="text-xs text-emerald-500/80 bg-emerald-500/10 inline-block px-3 py-1 rounded-full">
+                Tip: Upload horizontal wraps (~9.3" × 8.2") for best results
+              </p>
             </div>
 
             {files.length > 0 && (
