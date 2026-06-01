@@ -290,7 +290,7 @@ export default function MockupPipeline() {
                   <Video className="w-5 h-5" />
                   <span className="font-semibold tracking-wide uppercase text-sm">Auto-Generated Video</span>
                 </div>
-                <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-2xl relative group h-full">
+                <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 shadow-2xl relative group h-full min-h-[400px] lg:min-h-0 aspect-[4/5] lg:aspect-auto">
                   <video 
                     src="/examples/12_marketing_presentation.mp4" 
                     autoPlay 
@@ -467,8 +467,8 @@ export default function MockupPipeline() {
               </div>
 
               {/* Glassmorphic Lead Capture Card */}
-              <div className="absolute inset-0 flex items-center justify-center p-6 bg-zinc-950/40">
-                <div className="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-700/50 p-8 rounded-2xl w-full max-w-lg shadow-2xl">
+              <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/80 backdrop-blur-sm z-10">
+                <div className="bg-zinc-900/95 backdrop-blur-2xl border border-zinc-700/50 p-6 sm:p-8 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-full">
                   
                   {isLeadCaptured ? (
                     <div className="text-center py-8">
