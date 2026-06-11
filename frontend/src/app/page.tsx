@@ -243,6 +243,20 @@ export default function MockupPipeline() {
           </motion.div>
         )}
 
+        {/* BEFORE & AFTER SECTION */}
+        {uploadState === "idle" && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-20 w-full max-w-4xl mx-auto"
+          >
+            <div className="rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-900 group">
+              <img src="/examples/before_after.jpg" alt="Before and After Automation" className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700" />
+            </div>
+          </motion.div>
+        )}
+
         {/* FEATURES & EXAMPLES SECTION (Shown only in idle state) */}
         {uploadState === "idle" && (
           <motion.div 
