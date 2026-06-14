@@ -23,23 +23,99 @@ DEFAULT_DISPLACEMENT_STRENGTH = 40
 DEFAULT_GLASS_OPACITY = 0.75
 
 
-def _detect_focal_x(image: Image.Image) -> int:
+def _detect_focal_x(image: Image.Image, design_path: Path = None) -> int:
     """
     Find the horizontal location of the visually striking content in an
-    artwork. Uses a saturation+luminance score so it picks the subject
-    (e.g. a face) rather than a uniformly-bright background. Falls back
-    to the geometric center if nothing dominant is found.
+    artwork. Uses AI focal detection if enabled, falling back to heuristic.
     """
-    arr = np.array(image.convert("RGB"), dtype=np.float32)
-    r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
-    luma = (r + g + b) / 3.0
-    sat = arr.max(axis=2) - arr.min(axis=2)
-    score = luma * 0.6 + sat * 1.4
-    col_score = score.sum(axis=0)
-    win = max(50, image.width // 16)
-    kernel = np.ones(win, dtype=np.float32) / win
-    smoothed = np.convolve(col_score, kernel, mode="same")
-    return int(smoothed.argmax())
+    from config import AI_FOCAL_DETECTION_ENABLED, FOCAL_DETECTION_FALLBACK, AI_API_KEYS, AI_FOCAL_SLIDES
+    import json
+    import inspect
+
+    def heuristic_focal():
+        arr = np.array(image.convert("RGB"), dtype=np.float32)
+        r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
+        luma = (r + g + b) / 3.0
+        sat = arr.max(axis=2) - arr.min(axis=2)
+        score = luma * 0.6 + sat * 1.4
+        col_score = score.sum(axis=0)
+        win = max(50, image.width // 16)
+        kernel = np.ones(win, dtype=np.float32) / win
+        smoothed = np.convolve(col_score, kernel, mode="same")
+        return int(smoothed.argmax())
+
+    if not AI_FOCAL_DETECTION_ENABLED or not design_path:
+        return heuristic_focal()
+
+    # Find bundle directory for cache
+    bundle_dir = design_path.parent
+    if bundle_dir.name in ("wraps", "straight_wraps"):
+        bundle_dir = bundle_dir.parent
+    
+    cache_file = bundle_dir / "focal_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r") as f:
+                cache = json.load(f)
+        except Exception:
+            pass
+
+    img_name = design_path.name
+    if img_name in cache:
+        percent = cache[img_name]
+        return int((percent / 100.0) * image.width)
+
+    # Check if AI is allowed for the current slide
+    current_slide = None
+    for frame in inspect.stack():
+        if frame.function.startswith("slide_"):
+            current_slide = frame.function
+            break
+
+    if current_slide and current_slide not in AI_FOCAL_SLIDES:
+        logger.info("  [AI Focal] Skipping API call for %s (disabled for %s).", img_name, current_slide)
+        return heuristic_focal()
+
+    # API Call
+    api_key = AI_API_KEYS.get("gemini", "")
+    if not api_key:
+        logger.warning("  [AI Focal] No Gemini API key found, using fallback.")
+        return heuristic_focal()
+
+    logger.info("  [AI Focal] Analyzing %s...", img_name)
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemma-4-31b-it")
+        
+        # Resize image for faster API call (max 1024px)
+        thumb = image.copy()
+        thumb.thumbnail((1024, 1024))
+        
+        prompt = "This is a seamless tumbler wrap. Identify the single most visually striking focal element (e.g., face, animal, text). Return ONLY a number between 0 and 100 representing the horizontal percentage where this focal point is centered."
+        
+        response = model.generate_content([prompt, thumb])
+        text = response.text.strip().replace("%", "")
+        
+        import re
+        match = re.search(r'\d+', text)
+        if match:
+            percent = float(match.group())
+            percent = max(0, min(100, percent))
+            
+            # Save to cache
+            cache[img_name] = percent
+            with open(cache_file, "w") as f:
+                json.dump(cache, f, indent=2)
+                
+            return int((percent / 100.0) * image.width)
+        else:
+            raise ValueError(f"Could not parse percentage from AI response: {text}")
+            
+    except Exception as e:
+        logger.error("  [AI Focal] API call failed: %s. Using fallback.", e)
+        return heuristic_focal()
 
 
 def _create_single_tumbler_view(
@@ -51,6 +127,7 @@ def _create_single_tumbler_view(
     strength: float = DEFAULT_DISPLACEMENT_STRENGTH,
     glass_opacity: float = DEFAULT_GLASS_OPACITY,
     crop_mode: str = "full",
+    design_path: Path = None,
 ) -> Image.Image | None:
     """
     Creates one blended view of a tumbler using cv2.remap() for
@@ -67,6 +144,7 @@ def _create_single_tumbler_view(
     glass_opacity : float — strength of the screen blend shine
     crop_mode : str — "full", "left", "center", or "right"
                  For triple tumblers, crops 1/3 of the design.
+    design_path : Path — used for AI focal detection caching
 
     Returns
     -------
@@ -84,7 +162,7 @@ def _create_single_tumbler_view(
             # Center the crop on the visually striking part of the artwork,
             # not just the geometric middle. This keeps the subject's face/
             # focal element aligned with the visible tumbler face.
-            focal_x = _detect_focal_x(design_wrap)
+            focal_x = _detect_focal_x(design_wrap, design_path)
             x1 = max(0, min(dw - third, focal_x - third // 2))
             crop_box = (x1, 0, x1 + third, dh)
         else:  # right
@@ -170,6 +248,7 @@ def apply_displacement(
         result, artwork.convert("RGBA"),
         mask_pil, disp_pil, glass_pil,
         strength, glass_opacity, crop_mode="full",
+        design_path=None,  # No design path easily available here, falls back to heuristic
     )
 
     return blended_layer if blended_layer else result
@@ -245,6 +324,7 @@ def generate_cropped_single_tumbler(
         base, artwork,
         mask, disp, glass,
         strength, glass_opacity, crop_mode="center",
+        design_path=artwork_path,
     )
     
     if blended_layer is None:
@@ -300,6 +380,7 @@ def generate_triple_mockup(
         blended_layer = _create_single_tumbler_view(
             base, artwork, mask, disp, glass,
             strength, glass_opacity, crop_mode=pos,
+            design_path=art_p,
         )
 
         if blended_layer:

@@ -3,7 +3,11 @@ Configuration for Etsy Tumbler Wrap Automation — Phase 1
 All dimensions, paths, and settings in one place.
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ─── Base Paths ───────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent
@@ -73,6 +77,23 @@ DRIVE_PARENT_FOLDER_ID = "1wVgpGEIkmORDVFw7_f_T0T60slCgr8Do"
 # Set to False to skip generating the 360° marketing presentation mp4
 VIDEO_GENERATION_ENABLED = False
 
+# ─── AI Focal Detection ───────────────────────────────────────
+# Set to True to use Gemma 4 for intelligent focal point detection
+AI_FOCAL_DETECTION_ENABLED = True
+# Fallback method if API fails: "heuristic" or "opencv"
+FOCAL_DETECTION_FALLBACK = "heuristic"
+
+# Which slides should trigger an AI focal detection API call? 
+# (If a wrap was already analyzed, its cached result is always used regardless of this list)
+AI_FOCAL_SLIDES = [
+    "slide_01_hero",
+    "slide_01_b_hero_single_wrap",
+    "slide_02_bundle_grid",
+    "slide_05_lifestyle",
+    "slide_06_what_you_get",
+    "slide_09_multi_tumbler"
+]
+
 # ─── AI Listing Copy ──────────────────────────────────────────
 # Set to False to skip AI copy generation entirely
 AI_LISTING_ENABLED = False
@@ -90,7 +111,7 @@ AI_MODELS = {
 # API keys — set the one matching your active provider.
 # Leave others as empty string "".
 AI_API_KEYS = {
-    "claude": "",   # paste your Anthropic key here
-    "gemini": "",   # paste your Google AI key here
-    "openai": "",   # paste your OpenAI key here
+    "claude": os.getenv("CLAUDE_API_KEY", ""),   # paste your Anthropic key here or in .env
+    "gemini": os.getenv("GEMINI_API_KEY", ""),   # paste your Google AI key here or in .env
+    "openai": os.getenv("OPENAI_API_KEY", ""),   # paste your OpenAI key here or in .env
 }
