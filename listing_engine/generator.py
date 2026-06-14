@@ -399,4 +399,65 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
     else:
         logger.info("Marketing Video Generation skipped via config.")
 
+    # --- Pinterest Marketing Generation ---
+    from config import PINTEREST_MARKETING_ENABLED
+    if PINTEREST_MARKETING_ENABLED:
+        try:
+            logger.info("Starting Pinterest Marketing Generation...")
+            from listing_engine.pinterest_ai import generate_pinterest_copy
+            from listing_engine.pinterest_builder import create_pinterest_image_pin, create_pinterest_video_pin
+
+            # 1. Generate AI Hooks & Copy
+            pin_data = generate_pinterest_copy(bundle_dir, meta.get("bundle_name", "Collection"))
+            hooks = []
+            if pin_data and "hooks" in pin_data:
+                hooks = pin_data["hooks"]
+            else:
+                # Fallback to static text
+                bname = meta.get("bundle_name", "Tumbler Wrap")
+                hooks = [bname.upper(), f"NEW {bname.upper()}", f"PREMIUM {bname.upper()}", "CLICK TO DOWNLOAD", "TUMBLER WRAP BUNDLE"]
+
+            # 2. Get the 1st wrap for backgrounds
+            wrap_img = Image.open(wraps[0]).convert("RGBA")
+            pin_dir = out_dir.parent / "pinterest"
+            pin_dir.mkdir(parents=True, exist_ok=True)
+
+            # 3. Generate Video Pin (Pin 1)
+            rotating_video = out_dir / "temp_rotation.mp4"
+            if rotating_video.exists():
+                out_pin_vid = pin_dir / "01_pinterest_video.mp4"
+                create_pinterest_video_pin(wrap_img, rotating_video, hooks[0], out_pin_vid)
+            else:
+                logger.warning("No temp_rotation.mp4 found for Pinterest video pin.")
+
+            # 4. Generate Image Pins (Pins 2-5)
+            target_slide_names = [
+                "01_1_hero_single_wrap",
+                "04_flat_wrap",
+                "05_lifestyle_mockup",
+                "11_flat_bundle_preview"
+            ]
+            target_slides = []
+            for name in target_slide_names:
+                slide_file = next((s for s in saved if name in s.name), None)
+                if slide_file:
+                    target_slides.append(slide_file)
+            
+            # If any are missing, fallback to whatever we have to reach 4 pins
+            for s in saved:
+                if len(target_slides) >= 4: break
+                if s not in target_slides and s.suffix == ".png":
+                    target_slides.append(s)
+            
+            for i in range(min(4, len(target_slides))):
+                slide_img = Image.open(target_slides[i]).convert("RGBA")
+                out_pin_img = pin_dir / f"0{i+2}_pinterest_image.png"
+                create_pinterest_image_pin(wrap_img, slide_img, hooks[i+1], out_pin_img, slide_name=target_slides[i].name)
+
+            logger.info("Pinterest Marketing Generated successfully!")
+        except Exception as e:
+            logger.error("Failed to generate Pinterest marketing: %s", e)
+    else:
+        logger.info("Pinterest Marketing Generation skipped via config.")
+
     return saved

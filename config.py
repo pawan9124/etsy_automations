@@ -23,8 +23,8 @@ OUTPUT_FORMAT = "PNG"
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
 # Minimum source resolution (pixels) — reject anything smaller
-MIN_WIDTH_PX = 1000
-MIN_HEIGHT_PX = 1000
+MIN_WIDTH_PX = 2000
+MIN_HEIGHT_PX = 2000
 
 # Resampling filter (Lanczos is the highest-quality downscale filter in Pillow)
 RESAMPLE_FILTER = "LANCZOS"
@@ -57,9 +57,7 @@ TAPERED_SUFFIX = "_tapered"
 LOG_FILENAME = "processing.log"
 LOG_LEVEL = "INFO"
 
-# ─── Google Drive Upload ─────────────────────────────────────
-# Set to False to skip Drive upload entirely
-DRIVE_UPLOAD_ENABLED = False
+
 
 # Path to your OAuth2 credentials JSON downloaded from Google Cloud Console.
 # Steps to get it: https://developers.google.com/drive/api/quickstart/python
@@ -73,9 +71,21 @@ DRIVE_TOKEN_FILE = BASE_DIR / "credentials" / "google_token.json"
 #   https://drive.google.com/drive/folders/<THIS_IS_THE_ID>
 DRIVE_PARENT_FOLDER_ID = "1wVgpGEIkmORDVFw7_f_T0T60slCgr8Do"
 
+# ================ FLAG SETUP ============================
+# ─── Google Drive Upload ─────────────────────────────────────
+# Set to False to skip Drive upload entirely
+DRIVE_UPLOAD_ENABLED = False
 # ─── Marketing Video ──────────────────────────────────────────
 # Set to False to skip generating the 360° marketing presentation mp4
 VIDEO_GENERATION_ENABLED = False
+
+# ─── Pinterest Marketing ──────────────────────────────────────
+# Generate 5 vertical (9:16) pins for Pinterest (1 video + 4 images)
+PINTEREST_MARKETING_ENABLED = True
+# Automatically generate Pinterest SEO copy and hooks using AI
+PINTEREST_USE_AI_COPY = True
+PINTEREST_W = 1080
+PINTEREST_H = 1920
 
 # ─── AI Focal Detection ───────────────────────────────────────
 # Set to True to use Gemma 4 for intelligent focal point detection
