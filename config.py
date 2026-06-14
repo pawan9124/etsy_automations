@@ -19,8 +19,8 @@ OUTPUT_FORMAT = "PNG"
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
 # Minimum source resolution (pixels) — reject anything smaller
-MIN_WIDTH_PX = 2000
-MIN_HEIGHT_PX = 2000
+MIN_WIDTH_PX = 1000
+MIN_HEIGHT_PX = 1000
 
 # Resampling filter (Lanczos is the highest-quality downscale filter in Pillow)
 RESAMPLE_FILTER = "LANCZOS"
@@ -55,7 +55,7 @@ LOG_LEVEL = "INFO"
 
 # ─── Google Drive Upload ─────────────────────────────────────
 # Set to False to skip Drive upload entirely
-DRIVE_UPLOAD_ENABLED = True
+DRIVE_UPLOAD_ENABLED = False
 
 # Path to your OAuth2 credentials JSON downloaded from Google Cloud Console.
 # Steps to get it: https://developers.google.com/drive/api/quickstart/python
@@ -68,6 +68,10 @@ DRIVE_TOKEN_FILE = BASE_DIR / "credentials" / "google_token.json"
 # Open the folder in Drive → copy the ID from the URL:
 #   https://drive.google.com/drive/folders/<THIS_IS_THE_ID>
 DRIVE_PARENT_FOLDER_ID = "1wVgpGEIkmORDVFw7_f_T0T60slCgr8Do"
+
+# ─── Marketing Video ──────────────────────────────────────────
+# Set to False to skip generating the 360° marketing presentation mp4
+VIDEO_GENERATION_ENABLED = False
 
 # ─── AI Listing Copy ──────────────────────────────────────────
 # Set to False to skip AI copy generation entirely

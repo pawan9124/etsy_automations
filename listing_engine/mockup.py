@@ -75,21 +75,20 @@ def _create_single_tumbler_view(
     # --- 1) Crop the design for panoramic views ---
     if crop_mode in ("left", "center", "strict_center", "right"):
         dw, dh = design_wrap.size
-        half = dw // 2
+        third = dw // 3
         if crop_mode == "left":
-            crop_box = (0, 0, half, dh)
+            crop_box = (0, 0, third, dh)
         elif crop_mode == "strict_center":
-            x1 = (dw - half) // 2
-            crop_box = (x1, 0, x1 + half, dh)
+            crop_box = (third, 0, third * 2, dh)
         elif crop_mode == "center":
             # Center the crop on the visually striking part of the artwork,
             # not just the geometric middle. This keeps the subject's face/
             # focal element aligned with the visible tumbler face.
             focal_x = _detect_focal_x(design_wrap)
-            x1 = max(0, min(dw - half, focal_x - half // 2))
-            crop_box = (x1, 0, x1 + half, dh)
+            x1 = max(0, min(dw - third, focal_x - third // 2))
+            crop_box = (x1, 0, x1 + third, dh)
         else:  # right
-            crop_box = (half, 0, dw, dh)
+            crop_box = (third * 2, 0, dw, dh)
         design_view = design_wrap.crop(crop_box)
     else:
         design_view = design_wrap

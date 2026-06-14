@@ -15,7 +15,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from config import OUTPUT_DIR, SUPPORTED_EXTENSIONS, STRAIGHT_SUFFIX, TAPERED_SUFFIX
+from config import OUTPUT_DIR, SUPPORTED_EXTENSIONS, STRAIGHT_SUFFIX, TAPERED_SUFFIX, VIDEO_GENERATION_ENABLED
 from listing_engine.ai_listing import generate_listing_copy
 from listing_engine.slides import (
     slide_01_hero,
@@ -82,6 +82,21 @@ class WrapSelector:
                 random.shuffle(self.available_wraps)
             selected.append(self.available_wraps.pop(0))
         return selected
+
+    def get_spread(self, count: int) -> list[Path]:
+        """Pick wraps evenly spread across the full sorted collection for maximum visual variety.
+        
+        e.g. from 15 wraps picking 3 → wraps at index 0, 5, 10 (not random neighbors).
+        """
+        n = len(self.all_wraps)
+        if n == 0:
+            return []
+        if n <= count:
+            return self.all_wraps.copy()
+        
+        step = n / count
+        indices = [int(i * step) for i in range(count)]
+        return [self.all_wraps[i] for i in indices]
 
 
 def _folder_name_to_title(folder_name: str) -> str:
@@ -254,8 +269,8 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
 
     selector = WrapSelector(wraps)
 
-    # --- SLIDE 01: Hero ---
-    hero_wraps = selector.get("_1", 3)
+    # --- SLIDE 01: Hero (use spread selection for maximum visual variety) ---
+    hero_wraps = selector.get_spread(3)
     if hero_base.exists():
         img = slide_01_hero(
             wrap_paths=hero_wraps,
@@ -370,15 +385,18 @@ def generate_listing_images(bundle_dir: Path) -> list[Path]:
     generate_listing_copy(bundle_dir, meta)
 
     # --- Marketing Video Generation ---
-    try:
-        from listing_engine.marketing_video import generate_marketing_video
-        out_video = out_dir / "12_marketing_presentation.mp4"
-        logger.info("Starting Marketing Video Generation...")
-        # Use the first wrap for the 3D rotating part
-        generate_marketing_video(out_dir.parent, str(wraps[0]), str(out_video))
-        saved.append(out_video)
-        logger.info("Marketing Video generated successfully!")
-    except Exception as e:
-        logger.error("Failed to generate marketing video: %s", e)
+    if VIDEO_GENERATION_ENABLED:
+        try:
+            from listing_engine.marketing_video import generate_marketing_video
+            out_video = out_dir / "12_marketing_presentation.mp4"
+            logger.info("Starting Marketing Video Generation...")
+            # Use the first wrap for the 3D rotating part
+            generate_marketing_video(out_dir.parent, str(wraps[0]), str(out_video))
+            saved.append(out_video)
+            logger.info("Marketing Video generated successfully!")
+        except Exception as e:
+            logger.error("Failed to generate marketing video: %s", e)
+    else:
+        logger.info("Marketing Video Generation skipped via config.")
 
     return saved
