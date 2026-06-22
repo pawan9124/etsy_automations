@@ -29,6 +29,14 @@ MIN_HEIGHT_PX = 2000
 # Resampling filter (Lanczos is the highest-quality downscale filter in Pillow)
 RESAMPLE_FILTER = "LANCZOS"
 
+# ─── Resize Strategy ─────────────────────────────────────────
+# How artwork is fitted into the tumbler wrap dimensions:
+#   "stretch" → Stretch to exact target size (what Photoshop does, ~6% unnoticeable)
+#   "cover"   → Scale to COVER the target, centre-crop (may clip edges)
+#   "contain" → Scale to FIT entirely + blurred edge extension (zero clipping)
+#   "fit"     → Scale to FIT entirely, pad with black (no clipping, but visible bars)
+RESIZE_MODE = "stretch"
+
 # ─── 20 oz Straight Tumbler Wrap ─────────────────────────────
 STRAIGHT_WIDTH_IN = 9.3      # inches (circumference)
 STRAIGHT_HEIGHT_IN = 8.2     # inches
@@ -74,10 +82,10 @@ DRIVE_PARENT_FOLDER_ID = "1wVgpGEIkmORDVFw7_f_T0T60slCgr8Do"
 # ================ FLAG SETUP ============================
 # ─── Google Drive Upload ─────────────────────────────────────
 # Set to False to skip Drive upload entirely
-DRIVE_UPLOAD_ENABLED = False
+DRIVE_UPLOAD_ENABLED = True
 # ─── Marketing Video ──────────────────────────────────────────
 # Set to False to skip generating the 360° marketing presentation mp4
-VIDEO_GENERATION_ENABLED = False
+VIDEO_GENERATION_ENABLED = True
 
 # ─── Pinterest Marketing ──────────────────────────────────────
 # Generate 5 vertical (9:16) pins for Pinterest (1 video + 4 images)
@@ -89,7 +97,7 @@ PINTEREST_H = 1920
 
 # ─── AI Focal Detection ───────────────────────────────────────
 # Set to True to use Gemma 4 for intelligent focal point detection
-AI_FOCAL_DETECTION_ENABLED = True
+AI_FOCAL_DETECTION_ENABLED = False
 # Fallback method if API fails: "heuristic" or "opencv"
 FOCAL_DETECTION_FALLBACK = "heuristic"
 

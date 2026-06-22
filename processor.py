@@ -1,10 +1,13 @@
 """
 Image processor — resizes artwork into straight & tapered 20 oz tumbler wraps.
 
-Design decisions:
-  * We use Pillow's LANCZOS resampling (highest-quality downscale).
-  * The source image is resized to COVER the target canvas
-    (no white bars), then center-cropped.
+Resize strategies (configured via RESIZE_MODE in config.py):
+  * "cover"   — Scale to COVER the target, centre-crop.  Fast, but may clip edges.
+  * "contain" — Scale to FIT entirely + blurred edge extension.  Zero clipping.  [DEFAULT]
+  * "fit"     — Scale to FIT entirely, pad remaining space with black.  No clipping.
+
+Other design decisions:
+  * We use Pillow’s LANCZOS resampling (highest-quality downscale).
   * DPI metadata is embedded so print shops get the right size.
   * Tapered wraps are output as a TRAPEZOID (wider top, narrower bottom)
     with transparent corners — ready for sublimation / cutting templates.
@@ -13,11 +16,13 @@ Design decisions:
 import logging
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
+import numpy as np
 
 from config import (
     DPI,
     RESAMPLE_FILTER,
+    RESIZE_MODE,
     STRAIGHT_WIDTH_PX, STRAIGHT_HEIGHT_PX,
     TAPERED_WIDTH_PX, TAPERED_HEIGHT_PX, TAPERED_BOTTOM_WIDTH_PX,
     STRAIGHT_SUFFIX, TAPERED_SUFFIX,
@@ -30,25 +35,112 @@ logger = logging.getLogger("etsy_tumbler")
 _RESAMPLE = getattr(Image.Resampling, RESAMPLE_FILTER, Image.Resampling.LANCZOS)
 
 
+# ─── Strategy 1: COVER (scale to fill, centre-crop) ─────────────
 def _cover_resize_and_crop(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
     """
-    Resize *img* so it fully COVERS the target dimensions (no empty space),
-    then center-crop to exact target size.  This preserves the artwork's
-    aspect ratio as closely as possible while filling the canvas.
+    Scale *img* to fully COVER the target, then centre-crop.
+    Fast and clean, but may clip edges when aspect ratios differ.
     """
     src_w, src_h = img.size
-    # Scale factor to cover the target
     scale = max(target_w / src_w, target_h / src_h)
     new_w = int(src_w * scale)
     new_h = int(src_h * scale)
-
     resized = img.resize((new_w, new_h), _RESAMPLE)
-
-    # Center crop
     left = (new_w - target_w) // 2
-    top = (new_h - target_h) // 2
-    cropped = resized.crop((left, top, left + target_w, top + target_h))
-    return cropped
+    top  = (new_h - target_h) // 2
+    return resized.crop((left, top, left + target_w, top + target_h))
+
+
+# ─── Strategy 2: CONTAIN (fit + blurred edge extension) ──────────
+def _contain_and_extend(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
+    """
+    Scale *img* to FIT entirely (zero clipping), then fill remaining
+    edge strips with a blurred version of the artwork.  A gradient
+    mask ensures the seam is invisible.
+    """
+    src_w, src_h = img.size
+
+    contain_scale = min(target_w / src_w, target_h / src_h)
+    new_w = int(src_w * contain_scale)
+    new_h = int(src_h * contain_scale)
+
+    # If source already covers, just centre-crop
+    if new_w >= target_w and new_h >= target_h:
+        return _cover_resize_and_crop(img, target_w, target_h)
+
+    fitted = img.resize((new_w, new_h), _RESAMPLE)
+
+    # Background: cover-resize → centre-crop → heavy blur
+    cover_scale = max(target_w / src_w, target_h / src_h)
+    bg_w = int(src_w * cover_scale)
+    bg_h = int(src_h * cover_scale)
+    bg = img.resize((bg_w, bg_h), _RESAMPLE)
+    bx = (bg_w - target_w) // 2
+    by = (bg_h - target_h) // 2
+    bg = bg.crop((bx, by, bx + target_w, by + target_h))
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=25))
+
+    # Gradient mask for seamless blending
+    BLEND_ZONE = 50
+    bz = min(BLEND_ZONE, new_w // 4, new_h // 4)
+    arr = np.full((new_h, new_w), 255, dtype=np.uint8)
+    for i in range(bz):
+        v = int(255 * i / bz)
+        arr[:, i]              = np.minimum(arr[:, i], v)
+        arr[:, new_w - 1 - i]  = np.minimum(arr[:, new_w - 1 - i], v)
+        arr[i, :]              = np.minimum(arr[i, :], v)
+        arr[new_h - 1 - i, :]  = np.minimum(arr[new_h - 1 - i, :], v)
+    mask = Image.fromarray(arr, "L")
+
+    # Composite
+    paste_x = (target_w - new_w) // 2
+    paste_y = (target_h - new_h) // 2
+    bg_rgba     = bg.convert("RGBA")
+    fitted_rgba = fitted.convert("RGBA")
+    bg_rgba.paste(fitted_rgba, (paste_x, paste_y), mask)
+    return bg_rgba.convert("RGB")
+
+
+# ─── Strategy 3: FIT (fit + solid black padding) ─────────────────
+def _fit_and_pad(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
+    """
+    Scale *img* to FIT entirely (zero clipping), pad remaining
+    space with solid black.  Simple and safe, but visible bars.
+    """
+    fitted = ImageOps.contain(img, (target_w, target_h), _RESAMPLE)
+    canvas = Image.new("RGB", (target_w, target_h), (0, 0, 0))
+    paste_x = (target_w - fitted.width) // 2
+    paste_y = (target_h - fitted.height) // 2
+    if fitted.mode == "RGBA":
+        canvas.paste(fitted, (paste_x, paste_y), fitted)
+    else:
+        canvas.paste(fitted, (paste_x, paste_y))
+    return canvas
+
+
+# ─── Strategy 4: STRETCH (direct resize, ignore aspect ratio) ─────
+def _stretch_to_fit(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
+    """
+    Directly resize *img* to the exact target dimensions.
+    This is what Photoshop does — for tumbler wraps where the
+    aspect-ratio difference is only ~6%, the distortion is
+    completely imperceptible, especially on a curved surface.
+    """
+    return img.resize((target_w, target_h), _RESAMPLE)
+
+
+# ─── Dispatcher ──────────────────────────────────────────────────
+_STRATEGIES = {
+    "stretch": _stretch_to_fit,
+    "cover":   _cover_resize_and_crop,
+    "contain": _contain_and_extend,
+    "fit":     _fit_and_pad,
+}
+
+def _resize_artwork(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
+    """Route to the resize strategy selected in config.py."""
+    fn = _STRATEGIES.get(RESIZE_MODE, _stretch_to_fit)
+    return fn(img, target_w, target_h)
 
 
 def _save_png(img: Image.Image, path: Path) -> None:
@@ -64,7 +156,7 @@ def _save_png(img: Image.Image, path: Path) -> None:
 
 def make_straight_wrap(img: Image.Image, out_dir: Path, stem: str, index: int) -> Path:
     """Create a straight 20 oz tumbler wrap and return the saved path."""
-    result = _cover_resize_and_crop(img, STRAIGHT_WIDTH_PX, STRAIGHT_HEIGHT_PX)
+    result = _resize_artwork(img, STRAIGHT_WIDTH_PX, STRAIGHT_HEIGHT_PX)
     filename = f"{stem}_{index:02d}{STRAIGHT_SUFFIX}.png"
     out_path = out_dir / filename
     _save_png(result, out_path)
@@ -85,7 +177,7 @@ def make_tapered_wrap(img: Image.Image, out_dir: Path, stem: str, index: int) ->
     wider at the rim, narrower at the base.
     """
     # 1. Resize artwork to cover the full canvas (sized to widest dimension)
-    result = _cover_resize_and_crop(img, TAPERED_WIDTH_PX, TAPERED_HEIGHT_PX)
+    result = _resize_artwork(img, TAPERED_WIDTH_PX, TAPERED_HEIGHT_PX)
 
     # 2. Convert to RGBA so we can apply transparency
     if result.mode != "RGBA":
