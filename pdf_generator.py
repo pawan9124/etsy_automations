@@ -102,15 +102,19 @@ def generate_download_pdf(bundle_name: str, drive_link: str) -> Path | None:
     # 5) URL displayed below button in small gold text
     c.setFont("Helvetica", url_font_size)
     c.setFillColor(HexColor("#C9A84C"))
-    display_url = drive_link if len(drive_link) <= 70 else drive_link[:67] + "..."
+    
+    import textwrap
+    lines = textwrap.wrap(drive_link, width=65, break_long_words=True)
     url_y = btn_y - gap
-    c.drawString(box_cx - c.stringWidth(display_url, "Helvetica", url_font_size) / 2, url_y, display_url)
+    for line in lines:
+        c.drawString(box_cx - c.stringWidth(line, "Helvetica", url_font_size) / 2, url_y, line)
+        url_y -= (url_font_size + 4)
 
-    # 6) Invisible clickable link covering the button
+    # 6) Invisible clickable link covering the button and text
     link_pad = 4
     c.linkURL(
         drive_link,
-        (btn_x - link_pad, btn_y - link_pad,
+        (btn_x - link_pad, url_y - link_pad,
          btn_x + btn_w + link_pad, btn_y + btn_h + link_pad),
         relative=0,
     )

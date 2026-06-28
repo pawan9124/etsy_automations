@@ -85,13 +85,13 @@ DRIVE_PARENT_FOLDER_ID = "1wVgpGEIkmORDVFw7_f_T0T60slCgr8Do"
 DRIVE_UPLOAD_ENABLED = True
 # ─── Marketing Video ──────────────────────────────────────────
 # Set to False to skip generating the 360° marketing presentation mp4
-VIDEO_GENERATION_ENABLED = True
+VIDEO_GENERATION_ENABLED = False
 
 # ─── Pinterest Marketing ──────────────────────────────────────
 # Generate 5 vertical (9:16) pins for Pinterest (1 video + 4 images)
-PINTEREST_MARKETING_ENABLED = True
+PINTEREST_MARKETING_ENABLED = False
 # Automatically generate Pinterest SEO copy and hooks using AI
-PINTEREST_USE_AI_COPY = True
+PINTEREST_USE_AI_COPY = False
 PINTEREST_W = 1080
 PINTEREST_H = 1920
 
